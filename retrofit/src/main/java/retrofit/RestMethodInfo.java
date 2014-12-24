@@ -36,6 +36,7 @@ import retrofit.http.Header;
 import retrofit.http.Headers;
 import retrofit.http.Multipart;
 import retrofit.http.Part;
+import retrofit.http.PartArray;
 import retrofit.http.PartMap;
 import retrofit.http.Path;
 import retrofit.http.Query;
@@ -358,6 +359,16 @@ final class RestMethodInfo {
             }
 
             gotPart = true;
+
+          } else if (methodAnnotationType == PartArray.class) {
+             if (requestType != RequestType.MULTIPART){
+               throw parameterError(i, "@PartArray parameters can only be used with multipart encoding.");
+             }
+             if (!(Iterable.class.isAssignableFrom(methodParameterType) || methodParameterType.isArray())){
+                throw parameterError(i, "@PartArray parameter type must be Iterable or Array");
+             }
+             gotPart = true;
+
           } else if (methodAnnotationType == PartMap.class) {
             if (requestType != RequestType.MULTIPART) {
               throw parameterError(i,

@@ -23,6 +23,7 @@ import java.lang.reflect.Array;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import retrofit.client.Header;
@@ -32,6 +33,7 @@ import retrofit.http.Body;
 import retrofit.http.Field;
 import retrofit.http.FieldMap;
 import retrofit.http.Part;
+import retrofit.http.PartArray;
 import retrofit.http.PartMap;
 import retrofit.http.Path;
 import retrofit.http.Query;
@@ -322,6 +324,35 @@ final class RequestBuilder implements RequestInterceptor.RequestFacade {
           } else {
             multipartBody.addPart(name, transferEncoding, converter.toBody(value));
           }
+        }
+      } else if(annotationType == PartArray.class){
+        if(value != null) { //Skip null values.
+            String name = ((Part) annotation).value();
+            String transferEncoding = ((Part) annotation).encoding();
+            if (value instanceof Iterable) {
+                for (Object iteratedValue: (Iterable<?>)value) {
+                    if (iteratedValue instanceof TypedOutput) {
+                        multipartBody.addPart(name, transferEncoding, (TypedOutput) iteratedValue);
+                    } else if (iteratedValue instanceof String) {
+                        multipartBody.addPart(name, transferEncoding, new TypedString((String) iteratedValue));
+                    } else {
+                        multipartBody.addPart(name, transferEncoding, converter.toBody(iteratedValue));
+                    }
+                }
+            }else if(value.getClass().isArray()){
+                for (int x = 0, arrayLength = Array.getLength(value); x < arrayLength; x++) {
+                    Object arrayValue = Array.get(value, x);
+                    if (arrayValue != null) { // Skip null values.
+                        if (arrayValue instanceof TypedOutput) {
+                            multipartBody.addPart(name, transferEncoding, (TypedOutput) arrayValue);
+                        } else if (arrayValue instanceof String) {
+                            multipartBody.addPart(name, transferEncoding, new TypedString((String) arrayValue));
+                        } else {
+                            multipartBody.addPart(name, transferEncoding, converter.toBody(arrayValue));
+                        }
+                    }
+                }
+            }
         }
       } else if (annotationType == PartMap.class) {
         if (value != null) { // Skip null values.
